@@ -2,10 +2,14 @@
 <html>
 <head>
   <title>Luma -> Google Calendar Sync</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; }
@@ -19,21 +23,21 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
     }
 
-    h2 { margin-top: 0; color: #333; }
-    p { color: #666; margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #333; margin-bottom: 5px;}
+    p.subtext { color: #666; margin-bottom: 25px; font-size: 14px; }
 
     /* Map Styling */
     #map { 
-      height: 300px; 
+      height: 350px; 
       width: 100%; 
       border-radius: 8px; 
-      margin-bottom: 15px; 
+      margin-bottom: 10px; 
       border: 2px solid #eee;
-      z-index: 1; /* Keep below dropdowns */
+      z-index: 1; 
     }
 
     /* Form Elements */
-    label { display: block; text-align: left; font-weight: bold; margin-bottom: 5px; color: #333; }
+    label { display: block; text-align: left; font-weight: bold; margin-bottom: 8px; color: #333; font-size: 14px;}
     select { 
       width: 100%; padding: 12px; border-radius: 6px; 
       border: 1px solid #ccc; font-size: 16px; margin-bottom: 20px; background: #fff;
@@ -42,13 +46,13 @@
     button { 
       background: #000; color: #fff; font-size: 16px; font-weight: bold;
       padding: 15px; width: 100%; border: none; border-radius: 6px; cursor: pointer; 
-      transition: background 0.2s;
+      transition: background 0.2s; margin-top: 10px;
     }
     button:hover { background: #333; }
 
     #status { margin-top: 20px; font-size: 14px; line-height: 1.5; }
     
-    .coord-display { font-size: 12px; color: #999; margin-bottom: 15px; text-align: right; }
+    .coord-display { font-size: 13px; color: #555; margin-bottom: 15px; text-align: right; font-family: monospace;}
   </style>
 </head>
 <body>
@@ -69,9 +73,9 @@
     <option value="climate">Climate</option>
   </select>
 
-  <label>2. Select Area (Pan & Zoom)</label>
+  <label>2. Select Area (Search or Pan)</label>
   <div id="map"></div>
-  <div class="coord-display" id="coord-text">Selected Area: Silicon Valley</div>
+  <div class="coord-display" id="coord-text">Center: 37.77, -122.41</div>
 
   <button onclick="client.requestCode();">🔄 Sync This Area</button>
   
@@ -85,24 +89,56 @@
   const REDIRECT_URI = 'https://diaorui.github.io'; // e.g. https://user.github.io
 
   // --- MAP SETUP ---
-  // Default: San Francisco / Bay Area
-  var map = L.map('map').setView([37.7749, -122.4194], 10);
+  var map = L.map('map').setView([37.7749, -122.4194], 10); // Default SF
 
-  // Add Free OpenStreetMap Tiles
+  // Add Free Tiles
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
+    attribution: '© OpenStreetMap',
     maxZoom: 18
   }).addTo(map);
 
-  // Update text when user moves map
-  map.on('moveend', function() {
-    var b = map.getBounds();
+  // 1. ADD SEARCH BAR (Free Nominatim Geocoder)
+  L.Control.geocoder({
+    defaultMarkGeocode: false
+  })
+  .on('markgeocode', function(e) {
+    var bbox = e.geocode.bbox;
+    var poly = L.polygon([
+      bbox.getSouthEast(),
+      bbox.getNorthEast(),
+      bbox.getNorthWest(),
+      bbox.getSouthWest()
+    ]);
+    map.fitBounds(poly.getBounds());
+  })
+  .addTo(map);
+
+  // 2. AUTO-LOCATE USER (Browser Geolocation)
+  map.locate({setView: true, maxZoom: 12});
+
+  function onLocationFound(e) {
+    // Optional: Add a marker showing "You are here"
+    // L.marker(e.latlng).addTo(map).bindPopup("You are here").openPopup();
+  }
+  
+  function onLocationError(e) {
+    console.log("Could not auto-locate: " + e.message);
+    // Silent fail: just stays on default view (SF)
+  }
+
+  map.on('locationfound', onLocationFound);
+  map.on('locationerror', onLocationError);
+
+  // 3. UPDATE COORDINATES DISPLAY
+  function updateCoords() {
     var center = map.getCenter();
     document.getElementById('coord-text').innerText = 
-      `Selected: ${center.lat.toFixed(2)}, ${center.lng.toFixed(2)} (Width: ${(b.getEast() - b.getWest()).toFixed(2)}°)`;
-  });
+      `Selected Center: ${center.lat.toFixed(3)}, ${center.lng.toFixed(3)}`;
+  }
+  
+  map.on('moveend', updateCoords);
 
-  // --- AUTH & SYNC LOGIC ---
+  // --- AUTH & SYNC ---
   var client;
   window.onload = function() {
     client = google.accounts.oauth2.initCodeClient({
@@ -117,15 +153,13 @@
 
   function sendToBackend(code) {
     var statusDiv = document.getElementById('status');
-    statusDiv.innerHTML = "⏳ <b>Connecting...</b> <br><small>Verifying account & syncing events...</small>";
+    statusDiv.innerHTML = "⏳ <b>Connecting...</b>";
     statusDiv.style.color = "blue";
     
-    // CAPTURE MAP BOUNDS DYNAMICALLY
     var bounds = map.getBounds();
     
     const config = {
       slug: document.getElementById('slug').value,
-      // Leaflet gives us the exact boundaries of the visible screen
       north: bounds.getNorth(),
       south: bounds.getSouth(),
       east: bounds.getEast(),
@@ -148,7 +182,7 @@
         if (data.action === 'created') {
           msg = `✅ <b>Success!</b><br>Created calendar: <b>"${data.calendarName}"</b>`;
         } else {
-          msg = `🔄 <b>Updated!</b><br>Refreshed settings for: <b>"${data.calendarName}"</b>`;
+          msg = `🔄 <b>Updated!</b><br>Refreshed location for: <b>"${data.calendarName}"</b>`;
         }
         statusDiv.innerHTML = msg;
         statusDiv.style.color = "green";
