@@ -28,17 +28,37 @@ jobs:
 
       - name: Setup clasp
         run: |
-          echo "$CLASPRC_JSON" > ~/.clasprc.json
-          echo "$CLASP_JSON" > .clasp.json
+          # Write secrets to files (using printf to preserve exact formatting)
+          printf '%s\n' "$CLASPRC_JSON" > ~/.clasprc.json
+          printf '%s\n' "$CLASP_JSON" > .clasp.json
+
+          # Debug: Validate JSON files
+          echo "Validating .clasprc.json..."
+          if ! cat ~/.clasprc.json | jq empty 2>/dev/null; then
+            echo "Error: Invalid JSON in CLASPRC_JSON secret"
+            cat ~/.clasprc.json
+            exit 1
+          fi
+
+          echo "Validating .clasp.json..."
+          if ! cat .clasp.json | jq empty 2>/dev/null; then
+            echo "Error: Invalid JSON in CLASP_JSON secret"
+            cat .clasp.json
+            exit 1
+          fi
 
           # Auto-fix rootDir if it's wrong or missing
-          SCRIPT_ID=$(cat .clasp.json | grep -oP '"scriptId":\s*"\K[^"]+')
+          SCRIPT_ID=$(cat .clasp.json | jq -r '.scriptId')
+          echo "Script ID: $SCRIPT_ID"
+
           cat > .clasp.json <<EOF
           {
             "scriptId": "$SCRIPT_ID",
             "rootDir": "./apps-script"
           }
           EOF
+
+          echo "✓ clasp configuration files created successfully"
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           CLASP_JSON: ${{ secrets.CLASP_JSON }}
