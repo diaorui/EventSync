@@ -11,6 +11,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allow pushing commits back to repo
 
     steps:
       - name: Checkout code
@@ -80,6 +82,40 @@ jobs:
           NEW_URL="https://script.google.com/macros/s/${SCRIPT_ID}/exec"
           echo "gas_url=$NEW_URL" >> $GITHUB_OUTPUT
           echo "Deployed to: $NEW_URL"
+
+      - name: Cleanup old deployments
+        run: |
+          echo "Checking for old deployments to clean up..."
+
+          # Get all deployment IDs (excluding @HEAD)
+          DEPLOYMENTS=$(npx clasp deployments 2>&1 | grep -oP 'AKfycb[a-zA-Z0-9_-]+' || true)
+
+          if [ -z "$DEPLOYMENTS" ]; then
+            echo "No deployments found to clean up"
+            exit 0
+          fi
+
+          # Count deployments
+          DEPLOY_COUNT=$(echo "$DEPLOYMENTS" | wc -l)
+          echo "Found $DEPLOY_COUNT deployment(s)"
+
+          # Keep last 5 deployments, delete older ones
+          KEEP_COUNT=5
+
+          if [ "$DEPLOY_COUNT" -gt "$KEEP_COUNT" ]; then
+            DELETE_COUNT=$((DEPLOY_COUNT - KEEP_COUNT))
+            echo "Deleting $DELETE_COUNT old deployment(s), keeping last $KEEP_COUNT"
+
+            # Delete oldest deployments
+            echo "$DEPLOYMENTS" | head -n "$DELETE_COUNT" | while read -r DEPLOY_ID; do
+              echo "Deleting deployment: $DEPLOY_ID"
+              npx clasp undeploy "$DEPLOY_ID" || echo "Failed to delete $DEPLOY_ID (might be active deployment)"
+            done
+
+            echo "✓ Cleanup complete"
+          else
+            echo "Only $DEPLOY_COUNT deployment(s), no cleanup needed (keeping last $KEEP_COUNT)"
+          fi
 
       - name: Update GAS_URL in HTML
         if: success()
