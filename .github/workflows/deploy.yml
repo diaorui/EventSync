@@ -1,0 +1,71 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps-script/**'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup clasp
+        run: |
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+          echo "$CLASP_JSON" > .clasp.json
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CLASP_JSON: ${{ secrets.CLASP_JSON }}
+
+      - name: Push to Google Apps Script
+        run: npx clasp push --force
+
+      - name: Deploy new version
+        id: deploy
+        run: |
+          DEPLOY_OUTPUT=$(npx clasp deploy --description "Auto-deploy from GitHub Actions - ${{ github.sha }}" 2>&1)
+          echo "$DEPLOY_OUTPUT"
+
+          # Extract deployment ID from output
+          DEPLOYMENT_ID=$(echo "$DEPLOY_OUTPUT" | grep -oP '@\K\d+' | tail -1)
+          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_OUTPUT
+
+          # Get script ID from .clasp.json
+          SCRIPT_ID=$(cat .clasp.json | grep -oP '"scriptId":\s*"\K[^"]+')
+
+          # Construct new GAS URL
+          NEW_URL="https://script.google.com/macros/s/${SCRIPT_ID}/exec"
+          echo "gas_url=$NEW_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $NEW_URL"
+
+      - name: Update GAS_URL in HTML
+        if: success()
+        run: |
+          node scripts/update-gas-url.js "${{ steps.deploy.outputs.gas_url }}"
+
+      - name: Commit updated HTML
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/index.html
+          git diff --staged --quiet || git commit -m "🤖 Auto-update GAS_URL after deployment [skip ci]"
+          git push

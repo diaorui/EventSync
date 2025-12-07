@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+package-lock.json
+
+# clasp settings (contains script ID and credentials)
+.clasp.json
+.clasprc.json
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,21 @@
+{
+  "name": "event-sync",
+  "version": "1.0.0",
+  "description": "Sync Luma events to Google Calendar",
+  "scripts": {
+    "deploy": "clasp push && clasp deploy --description \"Auto-deploy from CI/CD\"",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "logs": "clasp logs",
+    "open": "clasp open"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diaorui/event-sync.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}
