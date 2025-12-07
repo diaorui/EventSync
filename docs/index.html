@@ -43,7 +43,7 @@
   window.onload = function() {
     client = google.accounts.oauth2.initCodeClient({
       client_id: CLIENT_ID,
-      scope: 'https://www.googleapis.com/auth/calendar',
+      scope: 'https://www.googleapis.com/auth/calendar.app.created openid email',
       ux_mode: 'popup',
       callback: (response) => {
         if (response.code) {
