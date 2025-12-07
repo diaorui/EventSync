@@ -73,7 +73,7 @@
     <option value="climate">Climate</option>
   </select>
 
-  <label>2. Select Area (Search or Pan)</label>
+  <label>2. Select Area</label>
   <div id="map"></div>
   <div class="coord-display" id="coord-text">Center: 37.77, -122.41</div>
 
@@ -85,7 +85,7 @@
 <script>
   // CONFIGURATION
   const CLIENT_ID = '465296465052-863gptjafq0b1o2ou4ovq8oggvmkgjmp.apps.googleusercontent.com'; // Paste from Step 1
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbztbxztevlcwkw5LOsKNklPUb5ASD45mxKMl1WVqx0p-ZYaNTMqFaXuw9HAbwo0-EZN7A/exec';     // Paste from Step 3 Deployment
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyXPq-4g-Ohe9GLJSsuV4echx7akRd0dnK813NKHJi4vbMqNqzWbWA4kWJ31s2bsy1b/exec';     // Paste from Step 3 Deployment
   const REDIRECT_URI = 'https://diaorui.github.io'; // e.g. https://user.github.io
 
   // --- MAP SETUP ---
@@ -96,22 +96,6 @@
     attribution: '© OpenStreetMap',
     maxZoom: 18
   }).addTo(map);
-
-  // 1. ADD SEARCH BAR (Free Nominatim Geocoder)
-  L.Control.geocoder({
-    defaultMarkGeocode: false
-  })
-  .on('markgeocode', function(e) {
-    var bbox = e.geocode.bbox;
-    var poly = L.polygon([
-      bbox.getSouthEast(),
-      bbox.getNorthEast(),
-      bbox.getNorthWest(),
-      bbox.getSouthWest()
-    ]);
-    map.fitBounds(poly.getBounds());
-  })
-  .addTo(map);
 
   // 2. AUTO-LOCATE USER (Browser Geolocation)
   map.locate({setView: true, maxZoom: 12});
