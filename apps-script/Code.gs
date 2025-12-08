@@ -50,19 +50,29 @@ function doPost(e) {
       email = JSON.parse(Utilities.newBlob(decoded).getDataAsString()).email;
     }
 
-    // 4. Acquire per-user lock for entire create/update process
-    var userLock = LockService.getUserLock();
-    if (!userLock.tryLock(30000)) {
-      throw new Error('Could not acquire lock for your account. Please try again.');
+    // 4. Validate email before proceeding
+    if (!email || email === "unknown") {
+      throw new Error('Unable to identify user. Please try again.');
     }
 
-    var calName, calendarId, actionTaken;
+    // 5. Use short-duration global lock just for DB read/write operations
+    // This prevents corruption while still allowing concurrent user requests
+    var dbLock = LockService.getScriptLock();
+    var calName = "";
+    var calendarId = "";
+    var actionTaken = "";
+    var rowIndex = -1;
+    var existingCalId = "";
+
+    // Acquire lock for database operations only
+    if (!dbLock.tryLock(10000)) {
+      throw new Error('Database is busy. Please try again in a moment.');
+    }
+
     try {
       // CHECK DATABASE (COMPOSITE KEY CHECK)
       var sheet = getDbSheet();
       var rows = sheet.getDataRange().getValues();
-      var rowIndex = -1;
-      var existingCalId = "";
 
       for (var i = 1; i < rows.length; i++) {
         var rowEmail = rows[i][1];
@@ -128,18 +138,24 @@ function doPost(e) {
           calendarId
         ]);
       }
-
-      // 7. CONDITIONAL SYNC (inside lock - ensures atomic operation)
-      if (actionTaken === 'created') {
-        try {
-          var events = fetchLumaEvents(config);
-          processEventsForUser(accessToken, calendarId, events);
-        } catch(e) {
-          console.error("Instant sync failed: " + e.message);
-        }
-      }
     } finally {
-      userLock.releaseLock();
+      try {
+        dbLock.releaseLock();
+      } catch(e) {
+        // Log but don't throw - we don't want to mask the original error
+        console.error("Failed to release lock: " + e.message);
+      }
+    }
+
+    // 7. CONDITIONAL SYNC (outside lock - allows concurrent requests)
+    if (actionTaken === 'created') {
+      try {
+        var events = fetchLumaEvents(config);
+        processEventsForUser(accessToken, calendarId, events);
+      } catch(e) {
+        console.error("Instant sync failed: " + e.message);
+        // Don't fail the request - sync will happen on next cron run
+      }
     }
 
     return ContentService.createTextOutput(JSON.stringify({
@@ -314,7 +330,7 @@ function processEventsForUser(accessToken, calendarId, lumaEvents) {
     if (entry.calendar && entry.calendar.description_short && entry.calendar.description_short.length > 0) {
       descriptionParts.push(entry.calendar.description_short);
     }
-    descriptionParts.push("📅 Synced by https://eventsync.ruidiao.dev");
+    descriptionParts.push("📅 Synced by eventsync.ruidiao.dev");
 
     var payload = {
       summary: evt.name,
