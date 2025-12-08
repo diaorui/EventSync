@@ -286,12 +286,20 @@
 
   function showSuccessModal(calendarName, action) {
     var calendarLink = '<a href="https://calendar.google.com/calendar" target="_blank" style="color: #2196f3; font-weight: bold; text-decoration: underline;">' + calendarName + '</a>';
-    var message = action === 'created'
-      ? 'Created calendar: ' + calendarLink
-      : 'Updated location for: ' + calendarLink;
+    var message, subtitle;
+
+    if (action === 'created') {
+      message = 'Created calendar: ' + calendarLink;
+      subtitle = 'Events are syncing now!';
+    } else {
+      message = 'Updated location for: ' + calendarLink;
+      subtitle = 'Events will refresh on next sync (runs regularly)';
+    }
+
     showModal(
       '<h3>✅ Success!</h3>' +
       '<p>' + message + '</p>' +
+      '<p style="font-size: 13px; color: #888; margin-top: -10px;">' + subtitle + '</p>' +
       '<button class="modal-button" onclick="hideModal()">Done</button>'
     );
   }
