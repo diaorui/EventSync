@@ -73,9 +73,9 @@
     <option value="climate">Climate</option>
   </select>
 
-  <label>2. Select Area</label>
+  <label>2. Select Area (Pan & Zoom Map)</label>
   <div id="map"></div>
-  <div class="coord-display" id="coord-text">Center: 37.77, -122.41</div>
+  <div class="coord-display" id="coord-text">Viewing area around 37.77°N, 122.41°W</div>
 
   <button onclick="client.requestCode();">🔄 Sync This Area</button>
   
@@ -113,11 +113,15 @@
   map.on('locationfound', onLocationFound);
   map.on('locationerror', onLocationError);
 
-  // 3. UPDATE COORDINATES DISPLAY
+  // 3. UPDATE AREA DISPLAY
   function updateCoords() {
     var center = map.getCenter();
-    document.getElementById('coord-text').innerText = 
-      `Selected Center: ${center.lat.toFixed(3)}, ${center.lng.toFixed(3)}`;
+    var bounds = map.getBounds();
+    var latDiff = (bounds.getNorth() - bounds.getSouth()).toFixed(2);
+    var lngDiff = (bounds.getEast() - bounds.getWest()).toFixed(2);
+
+    document.getElementById('coord-text').innerText =
+      `Selected area: ${center.lat.toFixed(2)}°N, ${Math.abs(center.lng).toFixed(2)}°W (±${latDiff}° × ${lngDiff}°)`;
   }
   
   map.on('moveend', updateCoords);
