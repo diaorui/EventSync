@@ -22,57 +22,35 @@ function doPost(e) {
       throw new Error("Invalid Category. Allowed: " + ALLOWED_SLUGS.join(", "));
     }
 
-    // 2. AUTH EXCHANGE OR USE PROVIDED TOKEN
-    var accessToken;
-    var refreshToken;
-    var email;
+    // 2. AUTH EXCHANGE
+    if (!data.auth_code) {
+      throw new Error("auth_code is required");
+    }
 
-    if (data.access_token) {
-      // Use provided access token (cached from previous auth)
-      accessToken = data.access_token;
+    var tokenResponse = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+      method: 'post',
+      payload: {
+        code: data.auth_code,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        redirect_uri: data.redirect_uri,
+        grant_type: 'authorization_code'
+      },
+      muteHttpExceptions: true
+    });
 
-      // Get user info from token
-      var userInfoResponse = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: 'Bearer ' + accessToken },
-        muteHttpExceptions: true
-      });
-      var userInfo = JSON.parse(userInfoResponse.getContentText());
-      if (userInfo.error) throw new Error("Invalid or expired token");
-      email = userInfo.email;
+    var tokens = JSON.parse(tokenResponse.getContentText());
+    if (tokens.error) throw new Error(tokens.error_description);
 
-      // No refresh token available (using cached token)
-      refreshToken = null;
+    var accessToken = tokens.access_token;
+    var refreshToken = tokens.refresh_token;
 
-    } else if (data.auth_code) {
-      // Exchange auth code for tokens (first-time auth)
-      var tokenResponse = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
-        method: 'post',
-        payload: {
-          code: data.auth_code,
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: data.redirect_uri,
-          grant_type: 'authorization_code'
-        },
-        muteHttpExceptions: true
-      });
-
-      var tokens = JSON.parse(tokenResponse.getContentText());
-      if (tokens.error) throw new Error(tokens.error_description);
-
-      accessToken = tokens.access_token;
-      refreshToken = tokens.refresh_token;
-
-      // Identify user from id_token
-      email = "unknown";
-      if (tokens.id_token) {
-        var parts = tokens.id_token.split('.');
-        var decoded = Utilities.base64Decode(parts[1]);
-        email = JSON.parse(Utilities.newBlob(decoded).getDataAsString()).email;
-      }
-
-    } else {
-      throw new Error("Either access_token or auth_code is required");
+    // Identify user from id_token
+    var email = "unknown";
+    if (tokens.id_token) {
+      var parts = tokens.id_token.split('.');
+      var decoded = Utilities.base64Decode(parts[1]);
+      email = JSON.parse(Utilities.newBlob(decoded).getDataAsString()).email;
     }
 
     // 4. CHECK DATABASE (COMPOSITE KEY CHECK)
@@ -94,7 +72,6 @@ function doPost(e) {
     }
 
     // 5. PREPARE VARS
-    var accessToken = tokens.access_token;
     var calName = "Luma Events (" + config.slug + ")";
     var calendarId = existingCalId;
     var actionTaken = "";
@@ -141,7 +118,7 @@ function doPost(e) {
       sheet.appendRow([
         new Date(),
         email,
-        refreshToken || "",  // May be empty if using cached token
+        refreshToken || "",
         JSON.stringify(config),
         calendarId
       ]);
@@ -161,8 +138,7 @@ function doPost(e) {
       status: 'success',
       action: actionTaken,
       email: email,
-      calendarName: calName,
-      accessToken: accessToken  // Return token for frontend caching
+      calendarName: calName
     }));
 
   } catch (err) {
