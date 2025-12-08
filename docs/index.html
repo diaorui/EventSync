@@ -100,13 +100,18 @@
   }).addTo(map);
 
   // 2. AUTO-LOCATE USER (Browser Geolocation)
-  map.locate({setView: true, maxZoom: 12});
+  map.locate({
+    setView: true,
+    maxZoom: 12,
+    timeout: 5000,
+    enableHighAccuracy: false  // Faster on mobile
+  });
 
   function onLocationFound(e) {
     // Optional: Add a marker showing "You are here"
     // L.marker(e.latlng).addTo(map).bindPopup("You are here").openPopup();
   }
-  
+
   function onLocationError(e) {
     console.log("Could not auto-locate: " + e.message);
     // Silent fail: just stays on default view (SF)
@@ -117,7 +122,39 @@
 
   // Manual location button
   function goToMyLocation() {
-    map.locate({setView: true, maxZoom: 12});
+    var btn = event.target;
+    var originalText = btn.innerHTML;
+
+    // Show loading state
+    btn.innerHTML = "⏳ Locating...";
+    btn.disabled = true;
+
+    // One-time listeners for this locate request
+    function onFound(e) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      map.off('locationfound', onFound);
+      map.off('locationerror', onFail);
+    }
+
+    function onFail(e) {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      alert("Could not get your location. Please check permissions and try again.");
+      map.off('locationfound', onFound);
+      map.off('locationerror', onFail);
+    }
+
+    map.once('locationfound', onFound);
+    map.once('locationerror', onFail);
+
+    map.locate({
+      setView: true,
+      maxZoom: 12,
+      timeout: 5000,           // 5 second timeout
+      enableHighAccuracy: false, // Faster on mobile
+      maximumAge: 10000        // Accept cached position up to 10s old
+    });
   }
 
 
