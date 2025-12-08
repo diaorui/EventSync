@@ -75,7 +75,7 @@
 
   <label>2. Select Area (Pan & Zoom Map)</label>
   <div style="text-align: right; margin-bottom: 10px;">
-    <button onclick="goToMyLocation()" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
+    <button onclick="goToMyLocation(this)" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
   </div>
   <div id="map"></div>
 
@@ -121,8 +121,7 @@
   map.on('locationerror', onLocationError);
 
   // Manual location button
-  function goToMyLocation() {
-    var btn = event.target;
+  function goToMyLocation(btn) {
     var originalText = btn.innerHTML;
 
     // Show loading state
