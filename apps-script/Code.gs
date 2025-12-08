@@ -10,9 +10,6 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'Server configuration error: ' + err.message}));
   }
 
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return ContentService.createTextOutput(JSON.stringify({status: 'error', msg: 'Server busy'}));
-
   try {
     var data = JSON.parse(e.postData.contents);
     var config = data.config;
