@@ -304,9 +304,15 @@ function processEventsForUser(accessToken, calendarId, lumaEvents) {
     var eventUrl = `https://lu.ma/${evt.url}`;
     var existingEvent = googleEventMap[eventUrl];
     
+    var descriptionParts = ["Event URL: " + eventUrl];
+    if (entry.calendar && entry.calendar.description_short && entry.calendar.description_short.length > 0) {
+      descriptionParts.push(entry.calendar.description_short);
+    }
+    descriptionParts.push("📅 Synced by https://eventsync.ruidiao.dev");
+
     var payload = {
       summary: evt.name,
-      description: "Event URL: " + eventUrl + (entry.calendar && entry.calendar.description_short && entry.calendar.description_short.length > 0 ? "\n\n" + entry.calendar.description_short : ""),
+      description: descriptionParts.join("\n\n"),
       location: evt.geo_address_info.full_address ? evt.geo_address_info.full_address : evt.geo_address_info.city_state,
       start: { dateTime: evt.start_at },
       end: { dateTime: evt.end_at }
@@ -316,6 +322,7 @@ function processEventsForUser(accessToken, calendarId, lumaEvents) {
       // Dirty Check Update
       var isDirty = false;
       if (existingEvent.summary !== payload.summary) isDirty = true;
+      if (existingEvent.description !== payload.description) isDirty = true;
       if (existingEvent.location !== payload.location) isDirty = true;
       if (new Date(existingEvent.start.dateTime).getTime() !== new Date(payload.start.dateTime).getTime()) isDirty = true;
       if (new Date(existingEvent.end.dateTime).getTime() !== new Date(payload.end.dateTime).getTime()) isDirty = true;
