@@ -1,5 +1,6 @@
 // --- CONFIGURATION ---
 var ALLOWED_SLUGS = ['tech', 'food', 'ai', 'arts', 'climate', 'fitness', 'wellness', 'crypto'];
+var PAGINATION_LIMIT = 20;
 
 function doPost(e) {
   // Validate Script Properties are set
@@ -204,7 +205,7 @@ function fetchLumaEvents(config) {
   // Directly using your URL structure
   const url = 'https://api2.luma.com/discover/get-paginated-events?' +
     `east=${config.east}&north=${config.north}&south=${config.south}&west=${config.west}` +
-    `&pagination_limit=${config.paginationLimit || 10}&slug=${config.slug || 'ai'}`;
+    `&pagination_limit=${PAGINATION_LIMIT}&slug=${config.slug || 'ai'}`;
   Logger.log("Luma URL: " + url);
   try {
     const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });

@@ -36,11 +36,7 @@ EventSync enables users to:
 - Automatically sync matching Luma events to a dedicated Google Calendar
 - Receive updates via scheduled background synchronization
 
-**Technology Stack:**
-- Frontend: Static HTML (GitHub Pages)
-- Backend: Google Apps Script
-- Database: Google Sheets
-- Authentication: OAuth 2.0
+**Stack:** Static HTML (GitHub Pages) + Google Apps Script + Google Sheets + OAuth 2.0
 
 ---
 
@@ -181,18 +177,18 @@ clasp login
 
 This creates `~/.clasprc.json` with your Google OAuth credentials.
 
-**2. Link to Apps Script Project**
+**2. Create `.clasp.json`**
 
-```bash
-clasp clone YOUR_SCRIPT_ID
+Create `.clasp.json` in project root with your Script ID:
+
+```json
+{
+  "scriptId": "YOUR_SCRIPT_ID",
+  "rootDir": "./apps-script"
+}
 ```
 
-This creates `.clasp.json` with your project configuration.
-
-Alternatively, if creating a new script:
-```bash
-clasp create --type api --title "EventSync Backend" --rootDir ./apps-script
-```
+Replace `YOUR_SCRIPT_ID` with your actual Script ID from Apps Script **Project Settings**.
 
 **3. Enable Apps Script API**
 
@@ -246,7 +242,7 @@ Your site will be live at: `https://yourusername.github.io/event-sync`
 
 #### Using CI/CD
 
-After setup, simply push changes:
+Push changes to `apps-script/` to trigger auto-deployment:
 
 ```bash
 git add apps-script/
@@ -254,14 +250,14 @@ git commit -m "Update backend logic"
 git push
 ```
 
-GitHub Actions will automatically:
-1. Deploy code to Google Apps Script
-2. Create new deployment version
-3. Extract deployment URL
-4. Update `GAS_URL` in `docs/index.html`
-5. Commit changes back to repository
+**Workflow automatically:**
+- Pushes code to Google Apps Script
+- Creates versioned deployment (e.g., @10, @11)
+- Updates `GAS_URL` in `docs/index.html`
+- Commits updated HTML back to repo
+- Deletes old deployments (keeps last 5)
 
-Monitor progress: **GitHub repo** → **Actions** tab
+**Monitor:** GitHub repo → **Actions** tab
 
 ### Manual Deployment
 
@@ -344,17 +340,11 @@ npm run open
 
 ## Scheduled Sync
 
-To enable automatic syncing for all users:
+Enable automatic background sync:
 
-1. Open your Apps Script project
-2. Click **Triggers** (clock icon)
-3. Click **Add Trigger**
-4. Configure:
-   - Function: `syncAllUsers`
-   - Event source: **Time-driven**
-   - Type: **Hour timer**
-   - Interval: **Every 4 hours** (or your preference)
-5. Click **Save**
+1. Apps Script editor → **Triggers** (clock icon) → **Add Trigger**
+2. Function: `syncAllUsers` | Event: **Time-driven** | Interval: **Every 4 hours**
+3. **Save**
 
 ---
 
@@ -383,30 +373,22 @@ To enable automatic syncing for all users:
 
 ### CI/CD Issues
 
-**GitHub Actions failing on clasp push**
-- Verify `CLASPRC_JSON` and `CLASP_JSON` secrets are set correctly
-- Check Script ID in `CLASP_JSON` matches your Apps Script project
+**Workflow fails**
+- Verify secrets: `CLASPRC_JSON`, `CLASP_JSON` (GitHub Settings → Secrets)
 - Enable Apps Script API: https://script.google.com/home/usersettings
-- Ensure secrets contain valid JSON (no extra quotes or escaping)
+- Ensure secrets are valid JSON (no extra quotes)
 
-**"Could not find script" error**
-- Script ID in `CLASP_JSON` may be incorrect
-- Verify access to script: `clasp open` (locally)
-- Check script hasn't been deleted
+**"Could not find script"**
+- Check Script ID in `CLASP_JSON` matches your project
+- Test locally: `clasp open`
 
-**"Missing credentials" error**
-- `CLASPRC_JSON` may be malformed
-- Try regenerating: `clasp logout && clasp login` then update secret
-
-**GAS_URL not updating in HTML**
-- Check GitHub Actions logs for errors in "Update GAS_URL" step
-- Verify `scripts/update-gas-url.js` exists
-- Ensure workflow has write permissions (default GITHUB_TOKEN should work)
+**Version mismatch / access_token error**
+- Match clasp versions: `clasp --version` should be 3.x
+- Regenerate: `clasp logout && clasp login`, update `CLASPRC_JSON` secret
 
 **Workflow not triggering**
-- Verify changes were pushed to `apps-script/` folder
-- Check `.github/workflows/deploy.yml` exists
-- Manually trigger: **Actions** → **Deploy to Google Apps Script** → **Run workflow**
+- Only triggers on `apps-script/**` changes
+- Manual: **Actions** → **Run workflow**
 
 ### Frontend Issues
 
@@ -438,8 +420,7 @@ To enable automatic syncing for all users:
     "north": 37.9,
     "south": 37.6,
     "east": -122.1,
-    "west": -122.5,
-    "paginationLimit": 10
+    "west": -122.5
   }
 }
 ```
@@ -455,7 +436,6 @@ To enable automatic syncing for all users:
 | `config.south`         | number | Southern boundary (latitude)             |
 | `config.east`          | number | Eastern boundary (longitude)             |
 | `config.west`          | number | Western boundary (longitude)             |
-| `config.paginationLimit` | number | Max events to fetch (optional, default 10) |
 
 **Success Response:**
 ```json
