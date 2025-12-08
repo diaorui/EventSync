@@ -94,16 +94,17 @@ jobs:
         run: |
           echo "Checking for old deployments to clean up..."
 
-          # Get all versioned deployments (exclude @HEAD, extract version numbers)
-          DEPLOYMENTS=$(npx clasp deployments 2>&1 | grep '@[0-9]' | grep -oP '@\K[0-9]+' | sort -n)
+          # Get all versioned deployments (exclude @HEAD)
+          DEPLOYMENT_LIST=$(npx clasp deployments 2>&1 | grep '@[0-9]')
 
-          if [ -z "$DEPLOYMENTS" ]; then
+          if [ -z "$DEPLOYMENT_LIST" ]; then
             echo "No versioned deployments found"
             exit 0
           fi
 
-          # Count deployments
-          DEPLOY_COUNT=$(echo "$DEPLOYMENTS" | wc -l)
+          # Extract version numbers and sort
+          VERSIONS=$(echo "$DEPLOYMENT_LIST" | grep -oP '@\K[0-9]+' | sort -n)
+          DEPLOY_COUNT=$(echo "$VERSIONS" | wc -l)
           echo "Found $DEPLOY_COUNT versioned deployment(s)"
 
           # Keep last 5 deployments, delete older ones
@@ -113,10 +114,16 @@ jobs:
             DELETE_COUNT=$((DEPLOY_COUNT - KEEP_COUNT))
             echo "Deleting $DELETE_COUNT old deployment(s), keeping last $KEEP_COUNT"
 
-            # Delete oldest deployments (lowest version numbers)
-            echo "$DEPLOYMENTS" | head -n "$DELETE_COUNT" | while read -r VERSION; do
-              echo "Deleting deployment @$VERSION"
-              npx clasp undeploy "@$VERSION" || echo "Failed to delete @$VERSION"
+            # Get versions to delete (oldest ones)
+            VERSIONS_TO_DELETE=$(echo "$VERSIONS" | head -n "$DELETE_COUNT")
+
+            # Delete each old deployment by finding its ID
+            for VERSION in $VERSIONS_TO_DELETE; do
+              DEPLOY_ID=$(echo "$DEPLOYMENT_LIST" | grep "@$VERSION" | grep -oP 'AKfycb[a-zA-Z0-9_-]+' | head -1)
+              if [ -n "$DEPLOY_ID" ]; then
+                echo "Deleting deployment @$VERSION ($DEPLOY_ID)"
+                npx clasp undeploy "$DEPLOY_ID" || echo "Failed to delete $DEPLOY_ID"
+              fi
             done
 
             echo "✓ Cleanup complete"
