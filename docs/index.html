@@ -83,8 +83,25 @@
     button:hover { background: #333; }
 
     #status { margin-top: 20px; font-size: 14px; line-height: 1.5; }
-    
+
     .coord-display { font-size: 13px; color: #555; margin-bottom: 15px; text-align: right; font-family: monospace;}
+
+    .footer {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      text-align: center;
+      font-size: 13px;
+      color: #777;
+    }
+    .footer a {
+      color: #2196f3;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -126,8 +143,12 @@
   <div id="map"></div>
 
   <button onclick="handleSync();">🔄 Sync This Area</button>
-  
+
   <div id="status"></div>
+
+  <div class="footer">
+    🔓 Open Source • <a href="https://github.com/diaorui/event-sync" target="_blank">View on GitHub</a>
+  </div>
 </div>
 
 <script>
