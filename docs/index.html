@@ -102,6 +102,15 @@
     .footer a:hover {
       text-decoration: underline;
     }
+
+    .privacy-note {
+      font-size: 12px;
+      color: #888;
+      margin-top: 15px;
+      margin-bottom: -5px;
+      text-align: center;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -141,6 +150,10 @@
     <button onclick="goToMyLocation(this)" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
   </div>
   <div id="map"></div>
+
+  <div class="privacy-note">
+    🔒 We only access calendars created by this app. Your existing calendars remain private.
+  </div>
 
   <button onclick="handleSync();">🔄 Sync This Area</button>
 
