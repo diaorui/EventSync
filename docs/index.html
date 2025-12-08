@@ -1,8 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Event Sync - Luma to Google Calendar</title>
+  <meta charset="UTF-8">
+  <title>Event Sync - Automatically Sync Luma Events to Google Calendar</title>
+  <meta name="description" content="Automatically sync local tech, AI, crypto, and cultural events from Luma to your Google Calendar. Free, open-source tool for event discovery and calendar management.">
+  <meta name="keywords" content="Luma events, Google Calendar sync, event sync, lu.ma calendar, tech events, AI events, event discovery">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Event Sync">
+  <link rel="canonical" href="https://eventsync.ruidiao.dev">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://eventsync.ruidiao.dev">
+  <meta property="og:title" content="Event Sync - Sync Luma Events to Google Calendar">
+  <meta property="og:description" content="Never miss local events. Automatically sync tech, AI, and cultural events from Luma to your Google Calendar.">
+  <meta property="og:image" content="https://eventsync.ruidiao.dev/eventsync-logo.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Event Sync - Sync Luma Events to Google Calendar">
+  <meta name="twitter:description" content="Automatically sync local events from Luma to your Google Calendar.">
+  <meta name="twitter:image" content="https://eventsync.ruidiao.dev/eventsync-logo.png">
+
   <link rel="icon" type="image/png" href="/eventsync-logo.png">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
@@ -27,7 +46,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
     }
 
-    h2 { color: #333; }
+    h1 { color: #333; font-size: 28px; }
     p.subtext { color: #666; margin-bottom: 15px; font-size: 14px; }
 
     .logo-header {
@@ -42,7 +61,7 @@
       height: 48px;
       object-fit: contain;
     }
-    .logo-header h2 {
+    .logo-header h1 {
       margin: 0;
     }
 
@@ -202,13 +221,42 @@
       100% { transform: rotate(360deg); }
     }
   </style>
+
+  <!-- Structured Data (JSON-LD) for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Event Sync",
+    "url": "https://eventsync.ruidiao.dev",
+    "description": "Automatically sync local tech, AI, crypto, and cultural events from Luma to your Google Calendar",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Event Sync"
+    },
+    "featureList": [
+      "Sync Luma events to Google Calendar",
+      "Filter by category (Tech, AI, Crypto, Arts, etc.)",
+      "Location-based event discovery",
+      "Automatic event updates",
+      "Open source"
+    ]
+  }
+  </script>
 </head>
 <body>
 
 <div class="card">
   <div class="logo-header">
-    <img src="/eventsync-logo.png" alt="Event Sync Logo">
-    <h2>Event Sync</h2>
+    <img src="/eventsync-logo.png" alt="Event Sync Logo - Sync Luma events to Google Calendar">
+    <h1>Event Sync</h1>
   </div>
   <p class="subtext">Automatically sync local events from Luma to your Google Calendar</p>
 
