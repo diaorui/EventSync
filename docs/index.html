@@ -75,9 +75,8 @@
 
   <label>2. Select Area (Pan & Zoom Map)</label>
   <div id="map"></div>
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-    <div class="coord-display" id="coord-text" style="margin: 0;">Viewing area around 37.77°N, 122.41°W</div>
-    <button onclick="goToMyLocation()" style="width: auto; padding: 8px 15px; margin: 0; font-size: 14px;">📍 My Location</button>
+  <div style="text-align: right; margin-bottom: 15px;">
+    <button onclick="goToMyLocation()" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
   </div>
 
   <button onclick="client.requestCode();">🔄 Sync This Area</button>
@@ -121,18 +120,6 @@
     map.locate({setView: true, maxZoom: 12});
   }
 
-  // 3. UPDATE AREA DISPLAY
-  function updateCoords() {
-    var center = map.getCenter();
-    var bounds = map.getBounds();
-    var latDiff = (bounds.getNorth() - bounds.getSouth()).toFixed(2);
-    var lngDiff = (bounds.getEast() - bounds.getWest()).toFixed(2);
-
-    document.getElementById('coord-text').innerText =
-      `Selected area: ${center.lat.toFixed(2)}°N, ${Math.abs(center.lng).toFixed(2)}°W (±${latDiff}° × ${lngDiff}°)`;
-  }
-  
-  map.on('moveend', updateCoords);
 
   // --- AUTH & SYNC ---
   var client;
