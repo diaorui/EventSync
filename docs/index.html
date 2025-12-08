@@ -79,7 +79,7 @@
     <button onclick="goToMyLocation()" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
   </div>
 
-  <button onclick="client.requestCode();">🔄 Sync This Area</button>
+  <button onclick="handleSync();">🔄 Sync This Area</button>
   
   <div id="status"></div>
 </div>
@@ -129,18 +129,33 @@
       scope: 'https://www.googleapis.com/auth/calendar.app.created openid email',
       ux_mode: 'popup',
       callback: (response) => {
-        if (response.code) sendToBackend(response.code);
+        if (response.code) sendToBackend(response.code, null);
       }
     });
   };
 
-  function sendToBackend(code) {
+  // Main sync handler - checks for cached token first
+  function handleSync() {
+    var cachedToken = localStorage.getItem('luma_access_token');
+    var tokenExpiry = localStorage.getItem('luma_token_expiry');
+
+    // Check if we have a valid cached token
+    if (cachedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+      // Use cached token
+      sendToBackend(null, cachedToken);
+    } else {
+      // No valid token, trigger OAuth
+      client.requestCode();
+    }
+  }
+
+  function sendToBackend(authCode, accessToken) {
     var statusDiv = document.getElementById('status');
     statusDiv.innerHTML = "⏳ <b>Connecting...</b>";
     statusDiv.style.color = "blue";
-    
+
     var bounds = map.getBounds();
-    
+
     const config = {
       slug: document.getElementById('slug').value,
       north: bounds.getNorth(),
@@ -149,18 +164,29 @@
       west: bounds.getWest()
     };
 
+    var payload = { config: config };
+
+    if (accessToken) {
+      payload.access_token = accessToken;
+    } else {
+      payload.auth_code = authCode;
+      payload.redirect_uri = REDIRECT_URI;
+    }
+
     fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        auth_code: code,
-        redirect_uri: REDIRECT_URI,
-        config: config
-      })
+      body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(data => {
       if(data.status === 'success') {
+        // Cache the access token for 1 hour
+        if (data.accessToken) {
+          localStorage.setItem('luma_access_token', data.accessToken);
+          localStorage.setItem('luma_token_expiry', Date.now() + 3600000); // 1 hour
+        }
+
         var msg = "";
         if (data.action === 'created') {
           msg = `✅ <b>Success!</b><br>Created calendar: <b>"${data.calendarName}"</b>`;
@@ -170,8 +196,15 @@
         statusDiv.innerHTML = msg;
         statusDiv.style.color = "green";
       } else {
-        statusDiv.innerHTML = "❌ Error: " + data.msg;
-        statusDiv.style.color = "red";
+        // If token is invalid/expired, clear cache and retry with OAuth
+        if (data.msg && data.msg.includes('token') && accessToken) {
+          localStorage.removeItem('luma_access_token');
+          localStorage.removeItem('luma_token_expiry');
+          client.requestCode(); // Trigger fresh OAuth
+        } else {
+          statusDiv.innerHTML = "❌ Error: " + data.msg;
+          statusDiv.style.color = "red";
+        }
       }
     })
     .catch(err => {
