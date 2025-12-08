@@ -7,9 +7,12 @@
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
 
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; }
@@ -155,11 +158,8 @@
   </select>
 
   <label>2. Select Area (Pan & Zoom Map)</label>
-  <div style="text-align: right; margin-bottom: 10px;">
-    <button onclick="goToMyLocation(this)" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; white-space: nowrap;">📍 Locate Me</button>
-  </div>
+  <div class="map-hint" style="margin-top: 8px; margin-bottom: 10px;">ℹ️ Events in this area will be synced</div>
   <div id="map"></div>
-  <div class="map-hint">ℹ️ Events in this area will be synced</div>
 
   <div class="privacy-note">
     🔒 We only access calendars created by this app. Your existing calendars remain private.
@@ -189,62 +189,21 @@
     maxZoom: 18
   }).addTo(map);
 
-  // 2. AUTO-LOCATE USER (Browser Geolocation)
-  map.locate({
-    setView: true,
-    maxZoom: 12,
-    timeout: 5000,
-    enableHighAccuracy: false  // Faster on mobile
-  });
-
-  function onLocationFound(e) {
-    // Optional: Add a marker showing "You are here"
-    // L.marker(e.latlng).addTo(map).bindPopup("You are here").openPopup();
-  }
-
-  function onLocationError(e) {
-    console.log("Could not auto-locate: " + e.message);
-    // Silent fail: just stays on default view (SF)
-  }
-
-  map.on('locationfound', onLocationFound);
-  map.on('locationerror', onLocationError);
-
-  // Manual location button
-  function goToMyLocation(btn) {
-    var originalText = btn.innerHTML;
-
-    // Show loading state
-    btn.innerHTML = "⏳ Locating...";
-    btn.disabled = true;
-
-    // One-time listeners for this locate request
-    function onFound(e) {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-      map.off('locationfound', onFound);
-      map.off('locationerror', onFail);
+  // Add Locate Control (handles geolocation)
+  L.control.locate({
+    position: 'topright',
+    flyTo: true,
+    keepCurrentZoomLevel: true,  // User controls zoom level
+    showPopup: false,             // Keep it clean, no popup
+    strings: {
+      title: "Show my location"
+    },
+    locateOptions: {
+      enableHighAccuracy: false,  // Faster on mobile
+      timeout: 10000,             // 10 second timeout
+      maximumAge: 0               // Force fresh location
     }
-
-    function onFail(e) {
-      btn.innerHTML = originalText;
-      btn.disabled = false;
-      alert("Could not get your location. Please check permissions and try again.");
-      map.off('locationfound', onFound);
-      map.off('locationerror', onFail);
-    }
-
-    map.once('locationfound', onFound);
-    map.once('locationerror', onFail);
-
-    map.locate({
-      setView: true,
-      maxZoom: 12,
-      timeout: 5000,           // 5 second timeout
-      enableHighAccuracy: false, // Faster on mobile
-      maximumAge: 10000        // Accept cached position up to 10s old
-    });
-  }
+  }).addTo(map);
 
 
   // --- AUTH & SYNC ---
