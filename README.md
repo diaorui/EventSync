@@ -4,6 +4,12 @@ Automatically synchronize local [Luma](https://lu.ma) events to Google Calendar 
 
 ---
 
+## Try It Now
+
+https://eventsync.ruidiao.dev
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
