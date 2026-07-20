@@ -274,8 +274,33 @@ function createSecondaryCalendar(accessToken, name) {
   });
   return JSON.parse(response.getContentText()).id;
 }
+// --- 6. HELPER: CHECK IF EVENT IS CROSS-DAY (DURATION > 24 HOURS) ---
+function isCrossDay(evt) {
+  if (!evt || !evt.start_at || !evt.end_at) {
+    return false;
+  }
+  try {
+    var startDate = new Date(evt.start_at);
+    var endDate = new Date(evt.end_at);
+    var durationMs = endDate.getTime() - startDate.getTime();
+    var hours = durationMs / (1000 * 60 * 60);
+    return hours > 24;
+  } catch (e) {
+    Logger.log("Error checking event duration: " + e.message);
+    return false;
+  }
+}
 
 function processEventsForUser(accessToken, calendarId, lumaEvents) {
+  // Filter out cross-day events (e.g. multi-day paid courses)
+  lumaEvents = lumaEvents.filter(entry => {
+    if (entry.event && isCrossDay(entry.event)) {
+      Logger.log("Filtering out cross-day event: " + entry.event.name + " (" + entry.event.start_at + " to " + entry.event.end_at + ")");
+      return false;
+    }
+    return true;
+  });
+
   var now = new Date();
   var timeMin = now.toISOString();
   
