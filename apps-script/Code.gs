@@ -1,6 +1,6 @@
 // --- CONFIGURATION ---
 var ALLOWED_SLUGS = ['tech', 'food', 'ai', 'arts', 'climate', 'fitness', 'wellness', 'crypto'];
-var PAGINATION_LIMIT = 20;
+var PAGINATION_LIMIT = 30;
 
 function doPost(e) {
   // Validate Script Properties are set
